@@ -1,0 +1,8 @@
+test-output/
+work/
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

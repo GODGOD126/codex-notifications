@@ -1,0 +1,6 @@
+interface:
+  display_name: "Codex 介入提醒"
+  short_description: "需要用户亲自介入时动态生成置顶弹窗并持续等待结果"
+  default_prompt: "Use $codex-notifications to alert me only when this task is blocked on my direct action."
+policy:
+  allow_implicit_invocation: true
