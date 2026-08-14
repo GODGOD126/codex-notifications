@@ -10,6 +10,7 @@ A lightweight Windows skill that lets Codex show a task-specific, always-on-top 
 
 - Notifies you only when Codex cannot safely continue without you, such as login, QR scanning, CAPTCHA, authorization, user-only information, or a consequential choice with no safe default.
 - Creates a fresh copy of the popup source for every request, so Codex can freely adapt the layout, fields, buttons, validation, and interaction to the current task.
+- Shows the originating project and exact Codex sidebar task name in a compact source strip, making simultaneous blocked tasks easy to identify.
 - Keeps the current Codex task waiting for your real response instead of treating popup close or expiry as approval.
 - Always includes **“我很忙，一会再说。”** (“I’m busy, ask me later”) as a non-terminal response.
 - Provides a desktop settings shortcut for duration, sound, enable/disable, and foreground behavior.
@@ -88,6 +89,7 @@ The test suite verifies the no-Hook contract, waiting minimum, dynamic popup cop
 - No telemetry and no network requests are built into the skill.
 - No credentials are stored by the installer.
 - Request files are kept locally under `%LOCALAPPDATA%\CodexNotifications\requests`.
+- The Codex app task list is the preferred source for the displayed task name. If no explicit name is passed, the script may read only the user-assigned `name` field from `%USERPROFILE%\.codex\state_5.sqlite` in read-only mode; it never uses the opening prompt as a title.
 - Avoid entering secrets into a popup unless the current task explicitly designs a safe lifecycle for them.
 
 ## License

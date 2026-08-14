@@ -5,12 +5,21 @@ param(
     [string] $Status = '任务已暂停 · 等待用户',
     [string] $ButtonText = '我已完成，继续',
     [string[]] $Options = @(),
+    [string] $ProjectName,
+    [string] $ConversationName,
+    [string] $ThreadId = $env:CODEX_THREAD_ID,
+    [string] $WorkingDirectory,
     [ValidateRange(-1, 86400)] [int] $DurationSeconds = -1,
     [string] $RequestId,
     [switch] $NoSound
 )
 
 . (Join-Path $PSScriptRoot 'common.ps1')
+
+if ([string]::IsNullOrWhiteSpace($WorkingDirectory)) { $WorkingDirectory = $PWD.Path }
+$resolvedProjectName = Resolve-CodexNotificationsProjectName -ProjectName $ProjectName -WorkingDirectory $WorkingDirectory
+$resolvedConversationName = Resolve-CodexNotificationsConversationName -ConversationName $ConversationName -ThreadId $ThreadId
+$sourceLabel = '{0}  ·  {1}' -f $resolvedProjectName, $resolvedConversationName
 
 if ($Title.Length -gt 32) { throw 'Title must be 32 characters or fewer. Rewrite it more concisely.' }
 if ($Message.Length -gt 120) { throw 'Message must be 120 characters or fewer. Keep detailed background in the Codex conversation.' }
@@ -49,6 +58,11 @@ if (Test-Path -LiteralPath $sourceTexture) { Copy-Item -LiteralPath $sourceTextu
 
 $request = [ordered]@{
     requestId = $RequestId
+    projectName = $resolvedProjectName
+    conversationName = $resolvedConversationName
+    threadId = $ThreadId
+    workingDirectory = $WorkingDirectory
+    sourceLabel = $sourceLabel
     title = $Title
     message = $Message
     status = $Status

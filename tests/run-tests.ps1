@@ -15,6 +15,10 @@ Assert-True ($skillText -match [regex]::Escape('我很忙，一会再说。')) '
 Assert-True ($skillText -match 'non-terminal `deferred`') 'SKILL.md must define deferred as non-terminal.'
 Assert-True ($skillText -match '2–4 concise choices') 'SKILL.md must define the compact decision pattern.'
 Assert-True ($skillText -match 'value.selectedOption') 'SKILL.md must document structured choice results.'
+Assert-True ($skillText -match 'source strip') 'SKILL.md must preserve project and conversation provenance.'
+Assert-True ($skillText -match 'codex_app__list_threads') 'SKILL.md must use the official Codex task list for the sidebar title.'
+Assert-True ($skillText -match 'use that entry''s `title` exactly') 'SKILL.md must pass the exact sidebar task title.'
+Assert-True ($skillText -match 'Do not substitute a summary, the first user message') 'SKILL.md must forbid message-derived task names.'
 
 $dialogText = Get-Content -LiteralPath (Join-Path $root 'src\warm-paper-dialog.ps1') -Raw
 Assert-True ($dialogText -match [regex]::Escape('Content="我很忙，一会再说。"')) 'Dialog must always render the exact busy-button label.'
@@ -42,6 +46,17 @@ Assert-True ($dialogText -match '\$sendReplyButton.IsEnabled = -not \[string\]::
 Assert-True ($dialogText -match '\$sendReplyButton.Add_Click') 'Inline send control must submit typed replies.'
 Assert-True ($dialogText.Contains("SetAutomationId(`$sendReplyButton, 'SendReplyButton')")) 'Inline send control must expose a stable automation identifier.'
 Assert-True ($dialogText -match [regex]::Escape('补充说明（输入后点箭头，或直接选项）')) 'Decision input must explain how its content is submitted.'
+Assert-True ($dialogText -match 'x:Name="SourceText"') 'Dialog must display project and conversation provenance.'
+
+$newDialogText = Get-Content -LiteralPath (Join-Path $root 'scripts\new-dialog.ps1') -Raw
+Assert-True ($newDialogText -match '\[string\] \$ProjectName') 'Dialog factory must accept an explicit project name.'
+Assert-True ($newDialogText -match '\[string\] \$ConversationName') 'Dialog factory must accept an explicit conversation name.'
+Assert-True ($newDialogText -match '\[string\] \$ThreadId = \$env:CODEX_THREAD_ID') 'Dialog factory must bind the current Codex thread id.'
+
+$commonText = Get-Content -LiteralPath (Join-Path $root 'scripts\common.ps1') -Raw
+Assert-True ($commonText -match "select nullif\(name,''\) from threads where id=\?") 'Local thread lookup must use only the explicit name field.'
+Assert-True ($commonText -notmatch "coalesce\(nullif\(name,''\),nullif\(title,''\),nullif\(first_user_message,''\)\)") 'Local lookup must never fall back to title or first_user_message.'
+. (Join-Path $root 'scripts\common.ps1')
 
 $waiterText = Get-Content -LiteralPath (Join-Path $root 'scripts\wait-result.ps1') -Raw
 Assert-True ($waiterText -match 'ValidateRange\(1260, 86400\)') 'Waiter must enforce a minimum of 1260 seconds.'
@@ -59,13 +74,22 @@ Assert-True (Test-Path -LiteralPath (Join-Path $testInstall 'codex-notifications
 Assert-True (Test-Path -LiteralPath (Join-Path $testInstall 'codex-notifications\src\settings-window.ps1')) 'Installed settings window is missing.'
 Assert-True (Test-Path -LiteralPath $installJson.settingsPath) 'Installer did not create settings.json.'
 
-$created = & (Join-Path $root 'scripts\new-dialog.ps1') -Title '测试标题' -Message '测试正文' -Options @('选项一', '选项二') -DurationSeconds 2 -RequestId ('test-' + [Guid]::NewGuid().ToString('N').Substring(0,8)) -NoSound | ConvertFrom-Json
+$created = & (Join-Path $root 'scripts\new-dialog.ps1') -Title '测试标题' -Message '测试正文' -Options @('选项一', '选项二') -ProjectName '测试项目' -ConversationName '测试会话' -ThreadId 'thread-test-001' -DurationSeconds 2 -RequestId ('test-' + [Guid]::NewGuid().ToString('N').Substring(0,8)) -NoSound | ConvertFrom-Json
 Assert-True (Test-Path -LiteralPath $created.dialogScript) 'Dynamic dialog copy was not created.'
 Assert-True (Test-Path -LiteralPath $created.requestPath) 'Request JSON was not created.'
 $request = Get-Content -LiteralPath $created.requestPath -Raw | ConvertFrom-Json
 Assert-True ($request.title -eq '测试标题') 'Request title did not round-trip.'
 Assert-True (@($request.options).Count -eq 2) 'Request options did not round-trip.'
 Assert-True ($request.options[1] -eq '选项二') 'Request option text changed.'
+Assert-True ($request.projectName -eq '测试项目') 'Request project name did not round-trip.'
+Assert-True ($request.conversationName -eq '测试会话') 'Request conversation name did not round-trip.'
+Assert-True ($request.threadId -eq 'thread-test-001') 'Request thread id did not round-trip.'
+Assert-True ($request.sourceLabel -eq '测试项目  ·  测试会话') 'Request source label was not composed correctly.'
+
+$fallbackThreadId = 'sidebar-title-missing-987654321'
+$fallbackName = Resolve-CodexNotificationsConversationName -ThreadId $fallbackThreadId
+Assert-True ($fallbackName -match '^任务 .+…$') 'Missing sidebar titles must fall back to a short task id.'
+Assert-True ($fallbackName -notmatch '我现在想做一些视频') 'Missing sidebar titles must never fall back to the opening message.'
 
 $messageRejected = $false
 try { & (Join-Path $root 'scripts\new-dialog.ps1') -Message ('长' * 121) -RequestId ('too-long-' + [Guid]::NewGuid().ToString('N').Substring(0,8)) -NoSound | Out-Null } catch { $messageRejected = $true }
@@ -85,4 +109,4 @@ $waitResult = & (Join-Path $root 'scripts\wait-result.ps1') -RequestDirectory $c
 Assert-True ($waitResult.status -eq 'resolved') 'Waiter did not resolve an accepted result.'
 
 if ($failures.Count -gt 0) { $failures | ForEach-Object { Write-Error $_ }; exit 1 }
-Write-Output ('PASS: {0} checks completed.' -f 49)
+Write-Output ('PASS: {0} checks completed.' -f 65)

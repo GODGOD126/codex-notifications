@@ -148,6 +148,12 @@ $xaml = @"
         <Grid>
           <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
           <Grid x:Name="TitleBar" Grid.Row="0" Height="58" Background="Transparent">
+            <Border HorizontalAlignment="Left" VerticalAlignment="Center" Margin="18,0,64,0" Padding="10,5" Background="#7AF2E9DD" CornerRadius="8" MaxWidth="520">
+              <StackPanel Orientation="Horizontal">
+                <Ellipse Width="7" Height="7" Fill="#C17C2B" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                <TextBlock x:Name="SourceText" FontSize="12" Foreground="#675E54" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+              </StackPanel>
+            </Border>
             <Button x:Name="CloseButton" Style="{StaticResource CloseButton}" Content="&#xE711;" HorizontalAlignment="Right" Margin="0,8,9,0" VerticalAlignment="Top" ToolTip="关闭提醒"/>
           </Grid>
           <Grid Grid.Row="1" Margin="42,3,34,20" MinHeight="200">
@@ -197,6 +203,7 @@ $xaml = @"
 $reader = [Xml.XmlNodeReader]::new([xml]$xaml)
 $window = [Windows.Markup.XamlReader]::Load($reader)
 $titleBar = $window.FindName('TitleBar')
+$sourceText = $window.FindName('SourceText')
 $closeButton = $window.FindName('CloseButton')
 $busyButton = $window.FindName('BusyButton')
 $primaryButton = $window.FindName('PrimaryButton')
@@ -216,6 +223,8 @@ $countdownText = $window.FindName('CountdownText')
 [Windows.Automation.AutomationProperties]::SetName($sendReplyButton, '发送回复')
 [Windows.Automation.AutomationProperties]::SetAutomationId($sendReplyButton, 'SendReplyButton')
 
+$sourceText.Text = [string]$request.sourceLabel
+$sourceText.ToolTip = ('项目：{0}{1}会话：{2}{1}Thread：{3}' -f [string]$request.projectName, [Environment]::NewLine, [string]$request.conversationName, [string]$request.threadId)
 $titleText.Text = [string]$request.title
 $messageText.Text = [string]$request.message
 $statusText.Text = [string]$request.status
