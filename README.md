@@ -19,12 +19,15 @@ A lightweight Windows skill that lets Codex show a task-specific, always-on-top 
 ## Requirements
 
 - Windows 10 or Windows 11
-- PowerShell 7 (`pwsh`) recommended; Windows PowerShell 5.1 is supported
-- Codex with local Skills support
+- Codex Desktop with local Skills support
+- PowerShell 7 (`pwsh`)
+- Git, or use **Code → Download ZIP** on the GitHub repository page
 
-## Install
+## 5-minute quick start
 
-Clone the repository and run the installer:
+### 1. Download and install
+
+Open PowerShell 7 and run:
 
 ```powershell
 git clone https://github.com/GODGOD126/codex-notifications.git
@@ -32,9 +35,15 @@ cd codex-notifications
 pwsh -NoProfile -File .\scripts\install.ps1
 ```
 
-The installer copies the skill to `%USERPROFILE%\.codex\skills\codex-notifications`, creates `%LOCALAPPDATA%\CodexNotifications\settings.json`, and adds **Codex 提醒设置** to the desktop.
+If you downloaded the ZIP, extract it, open PowerShell 7 in the extracted folder, and run only the final installer command.
 
-Restart Codex after the first installation so it discovers the skill.
+The installer:
+
+- Copies the skill to `%USERPROFILE%\.codex\skills\codex-notifications`
+- Creates `%LOCALAPPDATA%\CodexNotifications\settings.json`
+- Adds **Codex 提醒设置** to the desktop
+
+Quit and reopen Codex after installation so it discovers the new skill.
 
 To install without the desktop shortcut:
 
@@ -42,13 +51,63 @@ To install without the desktop shortcut:
 pwsh -NoProfile -File .\scripts\install.ps1 -NoDesktopShortcut
 ```
 
-## Make Codex use it automatically
+### 2. Tell Codex when to use it
 
-Add this compact rule to your Codex instructions:
+Add the rule below to either location:
+
+- **All projects:** `%USERPROFILE%\.codex\AGENTS.md`
+- **One project only:** `AGENTS.md` in that project's root directory
+
+Create the file if it does not exist. Project instructions take precedence over global instructions.
+
+Append:
 
 ```text
 When the task cannot safely continue without my direct intervention—such as login, QR scan, CAPTCHA, authorization, user-only information, or a required physical action—use $codex-notifications to alert me. Do not notify for normal progress, recoverable errors, or completion. After notifying, keep the current task active and wait according to the skill instructions. Do not use Hooks.
 ```
+
+Start a new Codex task after changing the instructions so the new rule is loaded.
+
+### 3. Show a test popup
+
+This command verifies the installation and UI without changing Codex configuration:
+
+```powershell
+$skillRoot = Join-Path $env:USERPROFILE '.codex\skills\codex-notifications'
+$created = & "$skillRoot\scripts\new-dialog.ps1" `
+  -Title 'Installation complete' `
+  -Message 'If you can see this window, the popup component is working.' `
+  -Options @('Looks correct', 'Need help') `
+  -ProjectName 'codex-notifications' `
+  -ConversationName 'First install test' `
+  -DurationSeconds 120 `
+  -NoSound | ConvertFrom-Json
+& "$skillRoot\scripts\show-dialog.ps1" -RequestDirectory $created.requestDirectory
+```
+
+You should see a warm white topmost window with a source label in the upper-left. Selecting an option submits immediately; typed text is sent with the inline arrow. The test popup closes automatically after two minutes.
+
+### 4. Use it normally
+
+You do not need to run a script for each task. Ask Codex to perform ordinary work, for example:
+
+- “Check the review status of my order on this website.”
+- “Publish this content in the admin dashboard.”
+- “Find out why I cannot finish setting up my account.”
+
+Codex should show the popup only if the task reaches a login, QR scan, CAPTCHA, authorization, user-only input, or another step that truly requires you. After you act or reply, the original task should continue. Normal progress and completion do not trigger a popup.
+
+## Update
+
+For a Git clone installation:
+
+```powershell
+cd codex-notifications
+git pull --ff-only
+pwsh -NoProfile -File .\scripts\install.ps1
+```
+
+Restart Codex afterward. For a ZIP installation, download the latest ZIP, extract it, and run the installer again.
 
 ## Settings
 
@@ -68,7 +127,25 @@ pwsh -NoProfile -File .\scripts\uninstall.ps1
 
 Use `-KeepSettings` to preserve local settings and request history.
 
-## Development and verification
+## Troubleshooting
+
+### `pwsh` is not recognized
+
+Install [PowerShell 7](https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-windows), open a new terminal, and run `pwsh --version`. Avoid Windows PowerShell 5.1 for scripts containing Chinese text.
+
+### Codex does not invoke the skill
+
+Check that `%USERPROFILE%\.codex\skills\codex-notifications\SKILL.md` exists, quit and reopen Codex, and confirm that the invocation rule is present in the global or project `AGENTS.md`. The popup is intentionally limited to genuine human-intervention blockers.
+
+### The test command does not show a window
+
+Open **Codex 提醒设置**, confirm notifications are enabled, leave exclusive full-screen mode, and retry. A normal window cannot appear above the lock screen or UAC secure desktop.
+
+### The popup shows the wrong task name
+
+During normal use, the skill matches the current `CODEX_THREAD_ID` against the official Codex task list. If no trustworthy title is available, it shows a short task ID instead of using the opening prompt as a title.
+
+## Developer verification (not required for installation)
 
 ```powershell
 pwsh -NoProfile -File .\tests\run-tests.ps1
@@ -77,6 +154,8 @@ py -3 "$env:USERPROFILE\.codex\skills\.system\skill-creator\scripts\quick_valida
 ```
 
 The test suite verifies the no-Hook contract, waiting minimum, dynamic popup copy, structured results, installer behavior, option validation, and that `config.toml` remains unchanged.
+
+The second command requires the Python Launcher and Codex's bundled `skill-creator`. Regular users only need the test popup in step 3.
 
 ## Limitations
 
