@@ -63,12 +63,23 @@ Assert-True ($waiterText -match 'ValidateRange\(1260, 86400\)') 'Waiter must enf
 
 $configPath = Join-Path $env:USERPROFILE '.codex\config.toml'
 $beforeHash = if (Test-Path -LiteralPath $configPath) { (Get-FileHash -LiteralPath $configPath -Algorithm SHA256).Hash } else { $null }
+$globalAgentsPath = Join-Path $env:USERPROFILE '.codex\AGENTS.md'
+$beforeAgentsHash = if (Test-Path -LiteralPath $globalAgentsPath) { (Get-FileHash -LiteralPath $globalAgentsPath -Algorithm SHA256).Hash } else { $null }
 $testInstall = Join-Path $root 'test-output\skills'
 $installJson = & (Join-Path $root 'scripts\install.ps1') -InstallRoot $testInstall -NoDesktopShortcut | ConvertFrom-Json
 Assert-True ($installJson.hooksInstalled -eq $false) 'Installer must report no hooks.'
 Assert-True ($installJson.codexConfigModified -eq $false) 'Installer must report no Codex config mutation.'
+Assert-True ($installJson.customInstructionsModified -eq $false) 'Installer must not modify custom instructions.'
+Assert-True ($installJson.codexMustTellUser -eq $true) 'Codex-assisted installs must require a user-facing custom-instructions handoff.'
+Assert-True ($installJson.customInstructionsUiPath.zhCN -eq '设置 > 个性化 > 自定义指令') 'Installer must return the Chinese custom-instructions path.'
+Assert-True ($installJson.customInstructionsUiPath.en -eq 'Settings > Personalization > Custom instructions') 'Installer must return the English custom-instructions path.'
+$expectedCustomInstructionsZh = '当任务必须由用户本人介入才能继续时，例如登录、扫码、验证码、授权、提供用户专属信息或完成必须人工操作和必须要用户来确认的步骤，请调用 $codex-notifications 弹窗提醒用户。普通进度、可自行解决的错误和任务完成不要提醒。调用后不得结束当前任务；必须按 Skill 规则持续等待用户回应，若用户没有回应，至少等待20分钟，期间不能停止对话，收到有效结果后再继续原任务。执行非必要不打扰原则。'
+Assert-True ($installJson.customInstructionsText.zhCN -ceq $expectedCustomInstructionsZh) 'Installer must return the exact approved Chinese custom instructions.'
+Assert-True ($installJson.customInstructionsText.en -match 'wait at least 20 minutes') 'Installer must return equivalent English custom instructions.'
 $afterHash = if (Test-Path -LiteralPath $configPath) { (Get-FileHash -LiteralPath $configPath -Algorithm SHA256).Hash } else { $null }
+$afterAgentsHash = if (Test-Path -LiteralPath $globalAgentsPath) { (Get-FileHash -LiteralPath $globalAgentsPath -Algorithm SHA256).Hash } else { $null }
 Assert-True ($beforeHash -eq $afterHash) 'Installer changed Codex config.toml.'
+Assert-True ($beforeAgentsHash -eq $afterAgentsHash) 'Installer changed the user global AGENTS.md.'
 Assert-True (Test-Path -LiteralPath (Join-Path $testInstall 'codex-notifications\SKILL.md')) 'Installed SKILL.md is missing.'
 Assert-True (Test-Path -LiteralPath (Join-Path $testInstall 'codex-notifications\scripts\open-settings.ps1')) 'Installed settings launcher is missing.'
 Assert-True (Test-Path -LiteralPath (Join-Path $testInstall 'codex-notifications\src\settings-window.ps1')) 'Installed settings window is missing.'
@@ -109,4 +120,4 @@ $waitResult = & (Join-Path $root 'scripts\wait-result.ps1') -RequestDirectory $c
 Assert-True ($waitResult.status -eq 'resolved') 'Waiter did not resolve an accepted result.'
 
 if ($failures.Count -gt 0) { $failures | ForEach-Object { Write-Error $_ }; exit 1 }
-Write-Output ('PASS: {0} checks completed.' -f 65)
+Write-Output ('PASS: {0} checks completed.' -f 72)

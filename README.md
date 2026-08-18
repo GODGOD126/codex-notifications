@@ -53,18 +53,24 @@ pwsh -NoProfile -File .\scripts\install.ps1 -NoDesktopShortcut
 
 ### 2. Tell Codex when to use it
 
-Add the rule below to either location:
+To make Codex aware of this skill in every task, open:
+
+**Settings → Personalization → Custom instructions**
+
+Paste the following English text in full and save it:
+
+```text
+When a task cannot continue without the user's direct intervention, such as signing in, scanning a QR code, completing a CAPTCHA, granting authorization, providing user-only information, performing a required manual action, or confirming a required decision, invoke $codex-notifications to alert the user with a popup. Do not notify for ordinary progress, recoverable errors, or task completion. After invoking it, do not end the current task; follow the Skill instructions and keep waiting for the user's response. If the user does not respond, wait at least 20 minutes without ending the conversation, and continue the original task only after receiving a valid response. Follow the principle of avoiding unnecessary interruptions.
+```
+
+According to the [official OpenAI documentation](https://learn.chatgpt.com/docs/reference/settings#personalization), editing custom instructions in the app updates your personal `AGENTS.md`. Users who prefer file-based configuration can instead add the same rule to:
 
 - **All projects:** `%USERPROFILE%\.codex\AGENTS.md`
 - **One project only:** `AGENTS.md` in that project's root directory
 
-Create the file if it does not exist. Project instructions take precedence over global instructions.
+Create the file if it does not exist. Project instructions take precedence over global instructions. Most users can use the Settings UI.
 
-Append:
-
-```text
-When the task cannot safely continue without my direct intervention—such as login, QR scan, CAPTCHA, authorization, user-only information, or a required physical action—use $codex-notifications to alert me. Do not notify for normal progress, recoverable errors, or completion. After notifying, keep the current task active and wait according to the skill instructions. Do not use Hooks.
-```
+The installer never edits custom instructions automatically, so it cannot overwrite or pollute existing rules. When Codex performs the installation for a user, Codex must show the settings path and the exact English text above after installation, and ask the user to paste and save it manually.
 
 Start a new Codex task after changing the instructions so the new rule is loaded.
 
