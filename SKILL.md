@@ -41,6 +41,8 @@ $created = & "<skill-root>\scripts\new-dialog.ps1" `
 
 Keep the source strip in the popup's upper-left corner. `new-dialog.ps1` automatically resolves the project from the caller's Git root or working directory. The Codex app task list is the authoritative source for the sidebar task name, so normally pass its exact `title` as `-ConversationName`. The script may use only an explicit local thread `name` as a fallback; it must never use the database `title` or `first_user_message`, because either can contain the opening prompt instead of the sidebar title. If no trustworthy task name is available, let the script show a short task ID. Never invent a misleading source name. Preserve `projectName`, `conversationName`, `threadId`, and `sourceLabel` when customizing the popup.
 
+Keep the source strip's **“进入对话 ↗”** control when a thread ID exists. It opens `codex://threads/<threadId>` through the Codex Desktop protocol so the app switches to the task that created the popup. Hide the control when no thread ID is available. Opening the task is navigation only: it must not write a terminal result, close the popup, or release the waiting turn. Also keep a visible minimize control in the upper-right corner; minimizing is non-terminal and must preserve the popup and waiting state.
+
 Read `$created.dialogScript` completely. It is a full standalone copy of the warm-paper reference implementation created only for this request.
 
 Edit that copied PowerShell file as freely as the current task requires. You may replace the layout, controls, fields, buttons, validation, visuals, window size, event handlers, and interaction model. The project deliberately imposes no UI schema. Preserve only the result-file contract when the popup itself must return data to Codex.

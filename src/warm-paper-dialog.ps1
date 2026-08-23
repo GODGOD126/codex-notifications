@@ -77,7 +77,7 @@ $xaml = @"
         ResizeMode="CanResizeWithGrip" ShowInTaskbar="True" Topmost="True"
         FontFamily="Microsoft YaHei UI" WindowStartupLocation="CenterScreen">
   <Window.Resources>
-    <Style x:Key="CloseButton" TargetType="Button">
+    <Style x:Key="WindowControlButton" TargetType="Button">
       <Setter Property="Width" Value="42"/><Setter Property="Height" Value="42"/>
       <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/><Setter Property="FontSize" Value="14"/>
       <Setter Property="Foreground" Value="#322F2A"/><Setter Property="Background" Value="Transparent"/>
@@ -85,6 +85,12 @@ $xaml = @"
       <Setter Property="Template">
         <Setter.Value><ControlTemplate TargetType="Button"><Border x:Name="Bg" Background="{TemplateBinding Background}" CornerRadius="10"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Bg" Property="Background" Value="#14000000"/></Trigger><Trigger Property="IsPressed" Value="True"><Setter TargetName="Bg" Property="Background" Value="#24000000"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value>
       </Setter>
+    </Style>
+    <Style x:Key="OpenConversationButton" TargetType="Button">
+      <Setter Property="Height" Value="28"/><Setter Property="Padding" Value="9,0"/><Setter Property="Margin" Value="10,0,0,0"/>
+      <Setter Property="FontSize" Value="12"/><Setter Property="Foreground" Value="#8A5B25"/><Setter Property="Background" Value="#70FFFFFF"/>
+      <Setter Property="BorderBrush" Value="#D7B98F"/><Setter Property="BorderThickness" Value="1"/><Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button"><Border x:Name="ButtonBorder" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="7" Padding="{TemplateBinding Padding}"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="ButtonBorder" Property="Background" Value="#FFFDF8"/><Setter TargetName="ButtonBorder" Property="BorderBrush" Value="#C99350"/></Trigger><Trigger Property="IsPressed" Value="True"><Setter TargetName="ButtonBorder" Property="Background" Value="#EEE1D0"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter>
     </Style>
     <Style x:Key="PrimaryButton" TargetType="Button">
       <Setter Property="Height" Value="46"/><Setter Property="Padding" Value="18,0"/>
@@ -148,13 +154,17 @@ $xaml = @"
         <Grid>
           <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
           <Grid x:Name="TitleBar" Grid.Row="0" Height="58" Background="Transparent">
-            <Border HorizontalAlignment="Left" VerticalAlignment="Center" Margin="18,0,64,0" Padding="10,5" Background="#7AF2E9DD" CornerRadius="8" MaxWidth="520">
-              <StackPanel Orientation="Horizontal">
-                <Ellipse Width="7" Height="7" Fill="#C17C2B" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                <TextBlock x:Name="SourceText" FontSize="12" Foreground="#675E54" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
-              </StackPanel>
+            <Border HorizontalAlignment="Left" VerticalAlignment="Center" Margin="18,0,112,0" Padding="10,5" Background="#7AF2E9DD" CornerRadius="8" MaxWidth="500">
+              <DockPanel LastChildFill="True">
+                <Button x:Name="OpenConversationButton" DockPanel.Dock="Right" Style="{StaticResource OpenConversationButton}" Content="进入对话  ↗" ToolTip="在 Codex 中进入这个任务"/>
+                <StackPanel Orientation="Horizontal">
+                  <Ellipse Width="7" Height="7" Fill="#C17C2B" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                  <TextBlock x:Name="SourceText" FontSize="12" Foreground="#675E54" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                </StackPanel>
+              </DockPanel>
             </Border>
-            <Button x:Name="CloseButton" Style="{StaticResource CloseButton}" Content="&#xE711;" HorizontalAlignment="Right" Margin="0,8,9,0" VerticalAlignment="Top" ToolTip="关闭提醒"/>
+            <Button x:Name="MinimizeButton" Style="{StaticResource WindowControlButton}" Content="&#xE921;" HorizontalAlignment="Right" Margin="0,8,51,0" VerticalAlignment="Top" ToolTip="最小化"/>
+            <Button x:Name="CloseButton" Style="{StaticResource WindowControlButton}" Content="&#xE711;" HorizontalAlignment="Right" Margin="0,8,9,0" VerticalAlignment="Top" ToolTip="关闭提醒"/>
           </Grid>
           <Grid Grid.Row="1" Margin="42,3,34,20" MinHeight="200">
             <Grid.ColumnDefinitions><ColumnDefinition Width="7"/><ColumnDefinition Width="22"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
@@ -204,6 +214,8 @@ $reader = [Xml.XmlNodeReader]::new([xml]$xaml)
 $window = [Windows.Markup.XamlReader]::Load($reader)
 $titleBar = $window.FindName('TitleBar')
 $sourceText = $window.FindName('SourceText')
+$openConversationButton = $window.FindName('OpenConversationButton')
+$minimizeButton = $window.FindName('MinimizeButton')
 $closeButton = $window.FindName('CloseButton')
 $busyButton = $window.FindName('BusyButton')
 $primaryButton = $window.FindName('PrimaryButton')
@@ -222,9 +234,19 @@ $countdownText = $window.FindName('CountdownText')
 [Windows.Automation.AutomationProperties]::SetAutomationId($replyInput, 'ReplyInput')
 [Windows.Automation.AutomationProperties]::SetName($sendReplyButton, '发送回复')
 [Windows.Automation.AutomationProperties]::SetAutomationId($sendReplyButton, 'SendReplyButton')
+[Windows.Automation.AutomationProperties]::SetName($openConversationButton, '进入该对话')
+[Windows.Automation.AutomationProperties]::SetAutomationId($openConversationButton, 'OpenConversationButton')
+[Windows.Automation.AutomationProperties]::SetName($minimizeButton, '最小化')
+[Windows.Automation.AutomationProperties]::SetAutomationId($minimizeButton, 'MinimizeButton')
+[Windows.Automation.AutomationProperties]::SetName($closeButton, '关闭提醒')
+[Windows.Automation.AutomationProperties]::SetAutomationId($closeButton, 'CloseButton')
 
 $sourceText.Text = [string]$request.sourceLabel
 $sourceText.ToolTip = ('项目：{0}{1}会话：{2}{1}Thread：{3}' -f [string]$request.projectName, [Environment]::NewLine, [string]$request.conversationName, [string]$request.threadId)
+$threadId = ([string]$request.threadId).Trim()
+if ([string]::IsNullOrWhiteSpace($threadId)) {
+    $openConversationButton.Visibility = [Windows.Visibility]::Collapsed
+}
 $titleText.Text = [string]$request.title
 $messageText.Text = [string]$request.message
 $statusText.Text = [string]$request.status
@@ -290,6 +312,18 @@ $submitTypedReply = {
 }
 
 $titleBar.Add_MouseLeftButtonDown({ if ($_.ButtonState -eq [Windows.Input.MouseButtonState]::Pressed) { $window.DragMove() } })
+$minimizeButton.Add_Click({ $window.WindowState = [Windows.WindowState]::Minimized })
+$openConversationButton.Add_Click({
+    if ([string]::IsNullOrWhiteSpace($threadId)) { return }
+    try {
+        $threadUri = 'codex://threads/{0}' -f [Uri]::EscapeDataString($threadId)
+        Start-Process -FilePath $threadUri | Out-Null
+        Write-DialogDiagnostic ('open-conversation thread={0}' -f $threadId)
+    } catch {
+        $openConversationButton.ToolTip = '暂时无法进入对话'
+        Write-DialogDiagnostic ('open-conversation-failed ' + $_.Exception.Message)
+    }
+})
 $closeButton.Add_Click({ $state.CloseReason = 'dismissed'; $window.Close() })
 $busyButton.Add_Click({
     $state.TerminalWritten = $true

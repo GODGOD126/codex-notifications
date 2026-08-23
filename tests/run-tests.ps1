@@ -47,6 +47,16 @@ Assert-True ($dialogText -match '\$sendReplyButton.Add_Click') 'Inline send cont
 Assert-True ($dialogText.Contains("SetAutomationId(`$sendReplyButton, 'SendReplyButton')")) 'Inline send control must expose a stable automation identifier.'
 Assert-True ($dialogText -match [regex]::Escape('补充说明（输入后点箭头，或直接选项）')) 'Decision input must explain how its content is submitted.'
 Assert-True ($dialogText -match 'x:Name="SourceText"') 'Dialog must display project and conversation provenance.'
+Assert-True ($dialogText -match 'x:Name="MinimizeButton"') 'Dialog must provide a minimize control.'
+Assert-True ($dialogText.Contains("SetAutomationId(`$minimizeButton, 'MinimizeButton')")) 'Minimize control must expose a stable automation identifier.'
+Assert-True ($dialogText -match '\$window\.WindowState = \[Windows\.WindowState\]::Minimized') 'Minimize control must minimize the window.'
+Assert-True ($dialogText -match 'x:Name="OpenConversationButton"') 'Source strip must provide an open-conversation control.'
+Assert-True ($dialogText.Contains("SetAutomationId(`$openConversationButton, 'OpenConversationButton')")) 'Open-conversation control must expose a stable automation identifier.'
+Assert-True ($dialogText -match [regex]::Escape("'codex://threads/{0}' -f [Uri]::EscapeDataString(`$threadId)")) 'Open-conversation control must use the Codex thread deep link.'
+Assert-True ($dialogText -match 'Start-Process -FilePath \$threadUri') 'Open-conversation control must launch the registered Codex protocol.'
+Assert-True ($dialogText -match '\$openConversationButton\.Visibility = \[Windows\.Visibility\]::Collapsed') 'Open-conversation control must be hidden without a thread id.'
+$openConversationHandler = [regex]::Match($dialogText, '\$openConversationButton\.Add_Click\(\{(?<body>.*?)\}\)\r?\n\$closeButton', [Text.RegularExpressions.RegexOptions]::Singleline).Groups['body'].Value
+Assert-True ($openConversationHandler -notmatch 'Write-DialogResult|\.Close\(') 'Opening a conversation must not submit a result or close the popup.'
 
 $newDialogText = Get-Content -LiteralPath (Join-Path $root 'scripts\new-dialog.ps1') -Raw
 Assert-True ($newDialogText -match '\[string\] \$ProjectName') 'Dialog factory must accept an explicit project name.'
@@ -120,4 +130,4 @@ $waitResult = & (Join-Path $root 'scripts\wait-result.ps1') -RequestDirectory $c
 Assert-True ($waitResult.status -eq 'resolved') 'Waiter did not resolve an accepted result.'
 
 if ($failures.Count -gt 0) { $failures | ForEach-Object { Write-Error $_ }; exit 1 }
-Write-Output ('PASS: {0} checks completed.' -f 72)
+Write-Output ('PASS: {0} checks completed.' -f 81)

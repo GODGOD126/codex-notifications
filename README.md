@@ -11,6 +11,8 @@ A lightweight Windows skill that lets Codex show a task-specific, always-on-top 
 - Notifies you only when Codex cannot safely continue without you, such as login, QR scanning, CAPTCHA, authorization, user-only information, or a consequential choice with no safe default.
 - Creates a fresh copy of the popup source for every request, so Codex can freely adapt the layout, fields, buttons, validation, and interaction to the current task.
 - Shows the originating project and exact Codex sidebar task name in a compact source strip, making simultaneous blocked tasks easy to identify.
+- Adds **Open chat ↗** beside the source name when a thread ID is available. It uses Codex Desktop's registered `codex://threads/<threadId>` deep link to switch to the originating task without submitting or dismissing the popup.
+- Includes a minimize control in the upper-right. Minimizing keeps the popup and Codex waiting state active, and the window can be restored from the Windows taskbar.
 - Keeps the current Codex task waiting for your real response instead of treating popup close or expiry as approval.
 - Always includes **“我很忙，一会再说。”** (“I’m busy, ask me later”) as a non-terminal response.
 - Provides a desktop settings shortcut for duration, sound, enable/disable, and foreground behavior.
@@ -91,7 +93,7 @@ $created = & "$skillRoot\scripts\new-dialog.ps1" `
 & "$skillRoot\scripts\show-dialog.ps1" -RequestDirectory $created.requestDirectory
 ```
 
-You should see a warm white topmost window with a source label in the upper-left. Selecting an option submits immediately; typed text is sent with the inline arrow. The test popup closes automatically after two minutes.
+You should see a warm white topmost window with a source label in the upper-left and minimize/close controls in the upper-right. When the test runs inside a Codex task, **Open chat ↗** appears beside the source and switches Codex back to that task. Selecting an option submits immediately; typed text is sent with the inline arrow. The test popup closes automatically after two minutes.
 
 ### 4. Use it normally
 
